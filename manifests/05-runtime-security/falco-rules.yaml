@@ -1,0 +1,11 @@
+- rule: Unauthorized Shell Spawned in Production Container
+  desc: Detects an interactive shell inside a financial microservice
+  condition: >
+    container.id != host and spawned_process and shell_procs and
+    k8s.ns.name in (domain-payments, domain-risk, domain-customer)
+  output: >
+    CRITICAL: Shell spawned in protected financial container
+    (user=%user.name pod=%k8s.pod.name ns=%k8s.ns.name
+    image=%container.image.repository cmd=%proc.cmdline)
+  priority: CRITICAL
+  tags: [pci-dss, zero-trust, runtime-defense]
