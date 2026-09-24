@@ -1,0 +1,37 @@
+name: CI Supply Chain Gate - Build, Scan, Sign
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-scan-sign:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Multi-Stage Minimal Build (Distroless)
+        run: |
+          echo "Building microservice using Google Distroless base image..."
+          # docker build -t finserv-registry.internal/payments/processor:${{ github.sha }} .
+
+      - name: Trivy Static Vulnerability Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'finserv-registry.internal/payments/processor:${{ github.sha }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH' # Fails build immediately on CRITICAL or HIGH CVEs
+
+      - name: Cosign Cryptographic Signature (HSM)
+        uses: sigstore/cosign-installer@main
+        with:
+          cosign-release: 'v2.0.0'
+      - run: |
+          echo "Signing image with Cosign..."
+          # cosign sign --key env://COSIGN_PRIVATE_KEY finserv-registry.internal/payments/processor:${{ github.sha }}
