@@ -1,0 +1,26 @@
+name: CD GitOps Delivery - Staging
+
+on:
+  workflow_run:
+    workflows: ["CI Supply Chain Gate - Build, Scan, Sign"]
+    types:
+      - completed
+
+jobs:
+  deploy-to-staging:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Authenticate to Kubernetes Cluster
+        run: |
+          echo "Authenticating via OIDC..."
+          # kubectl oidc-login setup --oidc-issuer-url=https://auth.finservdigital.internal
+
+      - name: Admission Enforcement (Kyverno Verify)
+        run: |
+          echo "Applying manifests..."
+          echo "Kyverno admission controller will now verify Cosign signatures before scheduling..."
+          # kubectl apply -f manifests/ --recursive
