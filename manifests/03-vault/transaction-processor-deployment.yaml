@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transaction-processor
+  namespace: domain-payments
+spec:
+  replicas: 3
+  template:
+    metadata:
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "payments-processor-role"
+        vault.hashicorp.com/agent-inject-secret-db-creds.txt: \
+          "database/creds/payments-db-role"
+    spec:
+      serviceAccountName: transaction-processor-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+      containers:
+      - name: processor
+        image: finserv-registry.internal/payments/processor:v2.4.1
+        resources:
+          limits:   {cpu: "1000m", memory: "1Gi"}
+          requests: {cpu: "250m",  memory: "256Mi"}
